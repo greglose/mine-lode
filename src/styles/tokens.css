@@ -1,0 +1,73 @@
+/* Mine Lode palette. Light by default; dark follows the device unless data-theme pins a choice on <html>.
+   The two dark blocks must stay identical (tests/theme.test.ts enforces it). The --crt-* case colours are a
+   physical object, so they are the same in light and dark. */
+:root {
+  --sky: #2F6FB3;
+  --bg: #F6F1E7;
+  --card: #FFFFFF;
+  --line: #E3DACB;
+  --ink: #1B2A3A;
+  --ink-soft: #4A5A6B;
+  --link: #2F6FB3;
+  --on-sky: #FFFFFF;
+  --focus-on-dark: #FFFFFF;
+  --control-border: #6B7B8C;
+  --crt-case: #D6CBB2;
+  --crt-case-light: #EEE6D2;
+  --crt-case-shadow: #9B8F76;
+  --crt-inset: #26231C;
+  --crt-glass-glare: #FFFFFF;
+  --crt-led-on: #5FE06E;
+  --crt-led-off: #3D473D;
+  --crt-badge: #3A3832;
+  --crt-badge-text: #EAE3D0;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sky: #0F1B2A;
+    --bg: #0B1522;
+    --card: #132236;
+    --line: #22344C;
+    --ink: #F3EEE4;
+    --ink-soft: #A9B6C6;
+    --link: #8DB8E8;
+    --on-sky: #FFFFFF;
+    --focus-on-dark: #FFFFFF;
+    --control-border: #6A7F99;
+    --crt-case: #D6CBB2;
+    --crt-case-light: #EEE6D2;
+    --crt-case-shadow: #9B8F76;
+    --crt-inset: #26231C;
+    --crt-glass-glare: #FFFFFF;
+    --crt-led-on: #5FE06E;
+    --crt-led-off: #3D473D;
+    --crt-badge: #3A3832;
+    --crt-badge-text: #EAE3D0;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --sky: #0F1B2A;
+  --bg: #0B1522;
+  --card: #132236;
+  --line: #22344C;
+  --ink: #F3EEE4;
+  --ink-soft: #A9B6C6;
+  --link: #8DB8E8;
+  --on-sky: #FFFFFF;
+  --focus-on-dark: #FFFFFF;
+  --control-border: #6A7F99;
+  --crt-case: #D6CBB2;
+  --crt-case-light: #EEE6D2;
+  --crt-case-shadow: #9B8F76;
+  --crt-inset: #26231C;
+  --crt-glass-glare: #FFFFFF;
+  --crt-led-on: #5FE06E;
+  --crt-led-off: #3D473D;
+  --crt-badge: #3A3832;
+  --crt-badge-text: #EAE3D0;
+  color-scheme: dark;
+}

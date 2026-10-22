@@ -1,0 +1,29 @@
+---
+// The Graphics setting as a native radio group (Classic / Modern). Labels and values come from graphics.ts.
+// Each panel that shows it passes its own `where`, so names and ids stay distinct and each group keeps its own checked state.
+import { GRAPHICS, GRAPHICS_LABELS } from '../lib/graphics';
+
+interface Props {
+  where: string;
+}
+const { where } = Astro.props;
+---
+
+<fieldset class="gfx" data-graphics-group={where}>
+  <legend>Graphics</legend>
+  {GRAPHICS.map((value) => (
+    <label for={`graphics-${where}-${value}`}>
+      <input type="radio" id={`graphics-${where}-${value}`} name={`graphics-${where}`} value={value} data-graphics checked={value === 'classic'} />
+      <span>{GRAPHICS_LABELS[value]}</span>
+    </label>
+  ))}
+</fieldset>
+
+<style>
+  .gfx { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+  .gfx legend { padding: 0; margin: 0 auto 6px; font-weight: 500; }
+  .gfx label { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; min-width: 48px; padding: 0 18px; border: 2px solid var(--bg); border-radius: 10px; color: var(--bg); font-weight: 500; cursor: pointer; }
+  .gfx input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+  .gfx label:has(input:checked) { background: var(--bg); color: var(--ink); }
+  .gfx label:focus-within { outline: 3px solid var(--on-sky); outline-offset: 2px; }
+</style>

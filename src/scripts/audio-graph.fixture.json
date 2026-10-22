@@ -1,0 +1,170 @@
+{
+ "sound:step": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=1 frequency.setValueAtTime(220,0.25) frequency.exponentialRampToValueAtTime(160,0.28500000000000003) connect(gain2)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.12,0.25) gain.exponentialRampToValueAtTime(0.0001,0.28500000000000003) connect(gain0)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.25) stop(0.28500000000000003)"
+ ],
+ "sound:climb": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.15,0.25) gain.exponentialRampToValueAtTime(0.0001,0.275) connect(gain0)",
+  "osc0: type=triangle frequency.setValueAtTime(500,0.25) frequency.exponentialRampToValueAtTime(700,0.275) connect(gain2) start(0.25) stop(0.275)"
+ ],
+ "sound:dig": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=1 frequency.setValueAtTime(300,0.25) frequency.exponentialRampToValueAtTime(200,0.29) connect(gain3)",
+  "filter1: type=bandpass Q.value=1 frequency.setValueAtTime(300,0.316) frequency.exponentialRampToValueAtTime(200,0.356) connect(gain5)",
+  "filter2: type=bandpass Q.value=1 frequency.setValueAtTime(300,0.383) frequency.exponentialRampToValueAtTime(200,0.423) connect(gain7)",
+  "filter3: type=bandpass Q.value=0.8 frequency.setValueAtTime(1200,0.4) frequency.exponentialRampToValueAtTime(300,0.52) connect(gain8)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.15,0.25) gain.exponentialRampToValueAtTime(0.0001,0.27) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.35,0.25) gain.exponentialRampToValueAtTime(0.0001,0.29) connect(gain0)",
+  "gain4: gain.setValueAtTime(0.15,0.316) gain.exponentialRampToValueAtTime(0.0001,0.336) connect(gain0)",
+  "gain5: gain.setValueAtTime(0.35,0.316) gain.exponentialRampToValueAtTime(0.0001,0.356) connect(gain0)",
+  "gain6: gain.setValueAtTime(0.15,0.383) gain.exponentialRampToValueAtTime(0.0001,0.403) connect(gain0)",
+  "gain7: gain.setValueAtTime(0.35,0.383) gain.exponentialRampToValueAtTime(0.0001,0.423) connect(gain0)",
+  "gain8: gain.setValueAtTime(0.25,0.4) gain.exponentialRampToValueAtTime(0.0001,0.52) connect(gain0)",
+  "osc0: type=square frequency.setValueAtTime(2200,0.25) frequency.exponentialRampToValueAtTime(1800,0.27) connect(gain2) start(0.25) stop(0.27)",
+  "osc1: type=square frequency.setValueAtTime(2400,0.316) frequency.exponentialRampToValueAtTime(2000,0.336) connect(gain4) start(0.316) stop(0.336)",
+  "osc2: type=square frequency.setValueAtTime(2600,0.383) frequency.exponentialRampToValueAtTime(2100,0.403) connect(gain6) start(0.383) stop(0.403)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.25) stop(0.29)",
+  "src1: buffer=noiseBuffer connect(filter1) start(0.316) stop(0.356)",
+  "src2: buffer=noiseBuffer connect(filter2) start(0.383) stop(0.423)",
+  "src3: buffer=noiseBuffer connect(filter3) start(0.4) stop(0.52)"
+ ],
+ "sound:refill": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=0.8 frequency.setValueAtTime(300,0.25) frequency.exponentialRampToValueAtTime(1200,0.5) connect(gain2)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.2,0.25) gain.exponentialRampToValueAtTime(0.0001,0.5) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.3,0.45) gain.exponentialRampToValueAtTime(0.0001,0.5700000000000001) connect(gain0)",
+  "osc0: type=sine frequency.setValueAtTime(90,0.45) frequency.exponentialRampToValueAtTime(50,0.5700000000000001) connect(gain3) start(0.45) stop(0.5700000000000001)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.25) stop(0.5)"
+ ],
+ "sound:gold": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.18,0.25) gain.exponentialRampToValueAtTime(0.0001,0.32) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.18,0.32) gain.exponentialRampToValueAtTime(0.0001,0.47) connect(gain0)",
+  "osc0: type=square frequency.setValueAtTime(880,0.25) connect(gain2) start(0.25) stop(0.32)",
+  "osc1: type=square frequency.setValueAtTime(1320,0.32) connect(gain3) start(0.32) stop(0.47)"
+ ],
+ "sound:allGold": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=4 frequency.setValueAtTime(6000,0.43) frequency.exponentialRampToValueAtTime(8000,0.73) connect(gain5)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.18,0.25) gain.exponentialRampToValueAtTime(0.0001,0.33999999999999997) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.18,0.33999999999999997) gain.exponentialRampToValueAtTime(0.0001,0.42999999999999994) connect(gain0)",
+  "gain4: gain.setValueAtTime(0.18,0.43) gain.exponentialRampToValueAtTime(0.0001,0.65) connect(gain0)",
+  "gain5: gain.setValueAtTime(0.15,0.43) gain.exponentialRampToValueAtTime(0.0001,0.73) connect(gain0)",
+  "osc0: type=square frequency.setValueAtTime(660,0.25) connect(gain2) start(0.25) stop(0.33999999999999997)",
+  "osc1: type=square frequency.setValueAtTime(880,0.33999999999999997) connect(gain3) start(0.33999999999999997) stop(0.42999999999999994)",
+  "osc2: type=square frequency.setValueAtTime(1320,0.43) connect(gain4) start(0.43) stop(0.65)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.43) stop(0.73)"
+ ],
+ "sound:land": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=1 frequency.setValueAtTime(600,0.25) frequency.exponentialRampToValueAtTime(300,0.31) connect(gain3)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.35,0.25) gain.exponentialRampToValueAtTime(0.0001,0.37) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.2,0.25) gain.exponentialRampToValueAtTime(0.0001,0.31) connect(gain0)",
+  "osc0: type=triangle frequency.setValueAtTime(140,0.25) frequency.exponentialRampToValueAtTime(50,0.37) connect(gain2) start(0.25) stop(0.37)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.25) stop(0.31)"
+ ],
+ "sound:guardTrapped": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.2,0.25) gain.exponentialRampToValueAtTime(0.0001,0.5) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.3,0.5) gain.exponentialRampToValueAtTime(0.0001,0.6) connect(gain0)",
+  "osc0: type=sawtooth frequency.setValueAtTime(700,0.25) frequency.exponentialRampToValueAtTime(200,0.5) connect(gain2) start(0.25) stop(0.5)",
+  "osc1: type=sine frequency.setValueAtTime(120,0.5) frequency.exponentialRampToValueAtTime(50,0.6) connect(gain3) start(0.5) stop(0.6)"
+ ],
+ "sound:guardKilled": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=0.8 frequency.setValueAtTime(1500,0.25) frequency.exponentialRampToValueAtTime(400,0.37) connect(gain2)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.35,0.25) gain.exponentialRampToValueAtTime(0.0001,0.37) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.2,0.25) gain.exponentialRampToValueAtTime(0.0001,0.55) connect(gain0)",
+  "osc0: type=sawtooth frequency.setValueAtTime(200,0.25) frequency.exponentialRampToValueAtTime(40,0.55) connect(gain3) start(0.25) stop(0.55)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.25) stop(0.37)"
+ ],
+ "sound:guardRespawn": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.18,0.25) gain.exponentialRampToValueAtTime(0.0001,0.4) connect(gain0)",
+  "osc0: type=triangle frequency.setValueAtTime(200,0.25) frequency.exponentialRampToValueAtTime(600,0.4) connect(gain2) start(0.25) stop(0.4)"
+ ],
+ "sound:death": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "filter0: type=bandpass Q.value=0.8 frequency.setValueAtTime(800,0.25) frequency.exponentialRampToValueAtTime(200,0.35) connect(gain2)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.35,0.25) gain.exponentialRampToValueAtTime(0.0001,0.35) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.2,0.25) gain.exponentialRampToValueAtTime(0.0001,0.43) connect(gain0)",
+  "gain4: gain.setValueAtTime(0.2,0.43) gain.exponentialRampToValueAtTime(0.0001,0.8300000000000001) connect(gain0)",
+  "osc0: type=sawtooth frequency.setValueAtTime(500,0.25) frequency.exponentialRampToValueAtTime(250,0.43) connect(gain3) start(0.25) stop(0.43)",
+  "osc1: type=sawtooth frequency.setValueAtTime(250,0.43) frequency.exponentialRampToValueAtTime(60,0.8300000000000001) connect(gain4) start(0.43) stop(0.8300000000000001)",
+  "src0: buffer=noiseBuffer connect(filter0) start(0.25) stop(0.35)"
+ ],
+ "sound:levelClear": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.18,0.25) gain.exponentialRampToValueAtTime(0.0001,0.35) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.18,0.35) gain.exponentialRampToValueAtTime(0.0001,0.44999999999999996) connect(gain0)",
+  "gain4: gain.setValueAtTime(0.18,0.45) gain.exponentialRampToValueAtTime(0.0001,0.55) connect(gain0)",
+  "gain5: gain.setValueAtTime(0.18,0.55) gain.exponentialRampToValueAtTime(0.0001,0.8500000000000001) connect(gain0)",
+  "osc0: type=square frequency.setValueAtTime(523,0.25) connect(gain2) start(0.25) stop(0.35)",
+  "osc1: type=square frequency.setValueAtTime(659,0.35) connect(gain3) start(0.35) stop(0.44999999999999996)",
+  "osc2: type=square frequency.setValueAtTime(784,0.45) connect(gain4) start(0.45) stop(0.55)",
+  "osc3: type=square frequency.setValueAtTime(1047,0.55) connect(gain5) start(0.55) stop(0.8500000000000001)"
+ ],
+ "sound:click": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.12,0.25) gain.exponentialRampToValueAtTime(0.0001,0.28) connect(gain0)",
+  "osc0: type=square frequency.setValueAtTime(600,0.25) connect(gain2) start(0.25) stop(0.28)"
+ ],
+ "sound:gameOver": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.22,0.25) gain.exponentialRampToValueAtTime(0.0001,0.45) connect(gain0)",
+  "gain3: gain.setValueAtTime(0.22,0.45) gain.exponentialRampToValueAtTime(0.0001,0.65) connect(gain0)",
+  "gain4: gain.setValueAtTime(0.22,0.65) gain.exponentialRampToValueAtTime(0.0001,1.15) connect(gain0)",
+  "osc0: type=triangle frequency.setValueAtTime(392,0.25) connect(gain2) start(0.25) stop(0.45)",
+  "osc1: type=triangle frequency.setValueAtTime(330,0.45) connect(gain3) start(0.45) stop(0.65)",
+  "osc2: type=triangle frequency.setValueAtTime(262,0.65) frequency.exponentialRampToValueAtTime(196,1.15) connect(gain4) start(0.65) stop(1.15)"
+ ],
+ "tune:menu": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.025,0.3) gain.exponentialRampToValueAtTime(0.0001,0.440625) connect(gain1)",
+  "gain3: gain.setValueAtTime(0.05,0.3) gain.exponentialRampToValueAtTime(0.0001,0.58125) connect(gain1)",
+  "osc0: type=square frequency.setValueAtTime(440,0.3) connect(gain2) start(0.3) stop(0.440625)",
+  "osc1: type=triangle frequency.setValueAtTime(110,0.3) connect(gain3) start(0.3) stop(0.58125)"
+ ],
+ "tune:play": [
+  "compressor0: threshold.value=-12 knee.value=12 ratio.value=8 attack.value=0.003 release.value=0.1 connect(destination)",
+  "gain0: gain.value=1 connect(compressor0)",
+  "gain1: gain.value=0.5 connect(destination)",
+  "gain2: gain.setValueAtTime(0.025,0.3) gain.exponentialRampToValueAtTime(0.0001,0.4022727272727272) connect(gain1)",
+  "gain3: gain.setValueAtTime(0.05,0.3) gain.exponentialRampToValueAtTime(0.0001,0.5045454545454545) connect(gain1)",
+  "osc0: type=square frequency.setValueAtTime(293.6647679174076,0.3) connect(gain2) start(0.3) stop(0.4022727272727272)",
+  "osc1: type=triangle frequency.setValueAtTime(73.41619197935188,0.3) connect(gain3) start(0.3) stop(0.5045454545454545)"
+ ]
+}

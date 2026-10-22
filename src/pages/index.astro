@@ -1,0 +1,329 @@
+---
+import '../styles/global.css';
+import { statSync } from 'node:fs';
+import GraphicsRadios from '../components/GraphicsRadios.astro';
+import { GAME } from '../data/game';
+import { assertCampaignValid } from '../lib/campaign';
+import { assertMusicValid, musicTracks } from '../lib/music';
+import { INITIALS_LENGTH, scoreColumns } from '../lib/scores';
+import { SEED_MAX, START_LIVES } from '../lib/session';
+import { TUNE_NAMES } from '../lib/tunes';
+import { turnstileSiteKey } from '../lib/turnstile';
+
+// A campaign level that cannot be finished fails the build.
+assertCampaignValid();
+
+const { name, tagline, description, themeColor, shortName, music, sourceUrl, companyUrl, privacyUrl } = GAME;
+const base = import.meta.env.BASE_URL;
+// A configured music file that is missing or over 3 MB fails the build.
+assertMusicValid(music, (path) => {
+  try {
+    return statSync(path).size;
+  } catch {
+    return undefined;
+  }
+}, TUNE_NAMES);
+const tracks = musicTracks(base, music);
+// The Turnstile script itself is loaded by the game only when the initials panel opens, never from this page.
+const turnstileKey = turnstileSiteKey({
+  PUBLIC_TURNSTILE_SITE_KEY: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
+  CF_PAGES: process.env.CF_PAGES,
+});
+const canonical = new URL(base, Astro.site).href;
+const slots = Array.from({ length: INITIALS_LENGTH }, (_, i) => i + 1);
+// The table head lists every column; the Seed column is shown for Endless only.
+const columns = scoreColumns('endless');
+const touchButtons = [
+  { btn: 'up', label: 'Climb up', glyph: '^', area: 'up' },
+  { btn: 'left', label: 'Move left', glyph: '<', area: 'left' },
+  { btn: 'right', label: 'Move right', glyph: '>', area: 'right' },
+  { btn: 'down', label: 'Climb down or drop', glyph: 'v', area: 'down' },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{name}</title>
+    <meta name="description" content={tagline} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={`${base}icon-192.png`} type="image/png" />
+    <link rel="manifest" href={`${base}manifest.webmanifest`} />
+    <meta name="theme-color" content={themeColor} />
+    <link rel="apple-touch-icon" href={`${base}icon-180.png`} />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content={shortName} />
+  </head>
+  <body>
+    <main>
+  <div class="game" data-game data-music={JSON.stringify(tracks)} data-bg={themeColor} data-screen="menu" data-turnstile-key={turnstileKey}>
+    <div class="monitor" data-monitor>
+    <div class="bezel">
+    <div class="vents" aria-hidden="true" data-decor></div>
+    <div class="stage">
+      <canvas data-canvas aria-label="Mine Lode game board"></canvas>
+      <div class="crt-fx" data-crt-fx aria-hidden="true"></div>
+
+      <div class="hud">
+        <span>Level <b data-hud-level>1</b></span>
+        <span>Score <b data-hud-score>0</b></span>
+        <span>Lives <b data-hud-lives>{START_LIVES}</b></span>
+        <span>Gold left <b data-hud-gold>0</b></span>
+        <button type="button" class="gbtn small" data-act="pause" aria-label="Pause">II</button>
+      </div>
+
+      <div class="touch">
+        <div class="pad">
+          {touchButtons.map((b) => (
+            <button type="button" data-btn={b.btn} aria-label={b.label} style={`grid-area: ${b.area}`}>{b.glyph}</button>
+          ))}
+        </div>
+        <div class="digs">
+          <button type="button" data-btn="digL" aria-label="Dig left">Dig &lt;</button>
+          <button type="button" data-btn="digR" aria-label="Dig right">Dig &gt;</button>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="menu">
+        <h1>{name}</h1>
+        <p>{tagline}</p>
+        <button type="button" class="gbtn" data-act="campaign">Play campaign</button>
+        <div class="levels" data-levels role="group" aria-label="Campaign levels"></div>
+        <div class="endless">
+          <label>Seed <input data-seed maxlength={SEED_MAX} autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="random" /></label>
+          <button type="button" class="gbtn" data-act="endless">Play endless</button>
+        </div>
+        <button type="button" class="gbtn" data-act="scores">High scores</button>
+        <GraphicsRadios where="menu" />
+        <p class="best">Best: campaign <b data-best-campaign>0</b>, endless <b data-best-endless>0</b></p>
+        <p class="update" data-update hidden>
+          Update ready - <button type="button" class="gbtn small" data-act="reload">reload</button>
+        </p>
+      </div>
+
+      <div class="panel compact" data-panel="pause" hidden>
+        <h2>Paused</h2>
+        <button type="button" class="gbtn" data-act="resume">Resume</button>
+        <button type="button" class="gbtn" data-act="restart">Restart level (costs a life)</button>
+        <div class="settings-row">
+          <button type="button" class="gbtn" data-act="toggle-effects" aria-pressed="true">Sound effects</button>
+          <button type="button" class="gbtn" data-act="toggle-music" aria-pressed="true">Music</button>
+          <button type="button" class="gbtn" data-act="toggle-crt" aria-pressed="true">Screen effect</button>
+        </div>
+        <GraphicsRadios where="pause" />
+        <button type="button" class="gbtn" data-act="menu">Quit to menu</button>
+      </div>
+
+      <div class="panel" data-panel="clear" hidden>
+        <h2>Level cleared</h2>
+        <button type="button" class="gbtn" data-act="next">Next level</button>
+      </div>
+
+      <div class="panel" data-panel="over" hidden>
+        <h2 data-over-title>Game over</h2>
+        <p>Score <b data-over-score>0</b></p>
+        <button type="button" class="gbtn" data-act="menu">Back to menu</button>
+      </div>
+
+      <div class="panel" data-panel="scores" hidden>
+        <h2>High scores</h2>
+        <div class="choices" role="group" aria-label="Game mode">
+          <button type="button" class="gbtn small" data-scores-tab="campaign" aria-pressed="true">Campaign</button>
+          <button type="button" class="gbtn small" data-scores-tab="endless" aria-pressed="false">Endless</button>
+        </div>
+        <div class="choices" role="group" aria-label="Whose scores">
+          <button type="button" class="gbtn small" data-scores-scope="everyone" aria-pressed="true">Everyone</button>
+          <button type="button" class="gbtn small" data-scores-scope="device" aria-pressed="false">This device</button>
+        </div>
+        <div class="board">
+          <table>
+            <caption data-scores-caption>Campaign high scores</caption>
+            <thead>
+              <tr>
+                {columns.map((c) => <th scope="col" data-col={c.toLowerCase()} hidden={c === 'Seed'}>{c}</th>)}
+              </tr>
+            </thead>
+            <tbody data-scores-body></tbody>
+          </table>
+        </div>
+        <p class="note" data-scores-note role="status"></p>
+        <button type="button" class="gbtn" data-act="scores-close">Close</button>
+      </div>
+
+      <div class="panel" data-panel="initials" hidden>
+        <h2>New high score</h2>
+        <p>Score <b data-initials-score>0</b></p>
+        <div class="slots" role="group" aria-label="Your initials">
+          {slots.map((n) => (
+            <div class="slot">
+              <button type="button" class="gbtn" data-initial-up aria-label={`Initial ${n} up`}>^</button>
+              <span class="letter" data-initial tabindex="0" role="spinbutton" aria-label={`Initial ${n} of ${INITIALS_LENGTH}`} aria-valuemin="1" aria-valuemax="26" aria-valuenow="1" aria-valuetext="A">A</span>
+              <button type="button" class="gbtn" data-initial-down aria-label={`Initial ${n} down`}>v</button>
+            </div>
+          ))}
+        </div>
+        <p class="fine">Use the up and down arrow keys or the buttons. Type letters to fill the slots. Press Enter to confirm.</p>
+        <div data-turnstile></div>
+        <p class="fine" data-initials-public>Your score and initials will be shown publicly on the shared high score board.</p>
+        <p class="note" data-initials-note role="status"></p>
+        <div class="choices">
+          <button type="button" class="gbtn" data-act="initials-ok">OK</button>
+          <button type="button" class="gbtn" data-act="initials-skip">Skip</button>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="error" hidden>
+        <h2>This game cannot start here</h2>
+        <p>It needs WebGL, which this browser or device has turned off or does not support.</p>
+      </div>
+
+      <p class="gfx-note" data-gfx-note role="status"></p>
+
+      <div class="rotate" aria-hidden="true">Rotate your device to landscape to play</div>
+    </div>
+    <div class="chin" aria-hidden="true" data-decor>
+      <span class="badge" data-badge>MINE LODE</span>
+      <span class="led" data-decor></span>
+      <span class="knob" data-decor></span>
+      <span class="knob" data-decor></span>
+    </div>
+    </div>
+    <div class="stand" aria-hidden="true" data-decor></div>
+    </div>
+  </div>
+
+      <section class="section container about" data-about>
+        <h2>How to play</h2>
+        <p>{description}</p>
+      <p>
+        Collect every gold block and a ladder appears. Climb it to the top of the screen to clear the level. Guards
+        chase you: dig a hole in the dirt beside you and they fall in. Holes fill back up after a few seconds, so
+        do not stand in one. You cannot jump, and you cannot dig stone. Clearing a level earns an extra life.
+      </p>
+      <h3>Controls</h3>
+      <ul>
+        <li>Keyboard: arrow keys or W A S D to move and climb, Z or Q to dig left, X or E to dig right.</li>
+        <li>P or Escape pauses, R restarts the level at the cost of a life, M mutes.</li>
+        <li>Touch: the pad on the left moves, the two buttons on the right dig. Hold your device in landscape.</li>
+      </ul>
+      <p>
+        Mine Lode is a real-time action game drawn on a canvas, so it cannot be played with a screen reader.
+      </p>
+      <h3>Privacy</h3>
+      <p>
+        Your progress, sound settings and your own top-ten tables stay on your device, in this browser's local
+        storage. No analytics and no cookies. If you choose to post a score to the shared board, the page sends three
+        initials, the score, the level reached, the mode and (for Endless) the seed. These are shown publicly. A
+        Cloudflare human check runs when you enter your initials; your IP address is not stored. Full policy:{' '}
+        <a href={privacyUrl}>Can't Lose Software privacy</a>.
+      </p>
+      </section>
+    </main>
+    <footer class="container site-foot">
+      <p>
+        A free game from <a href={companyUrl}>Can't Lose Software</a>. Mine Lode is open source (MIT). Source on GitHub:{' '}
+        <a href={sourceUrl}>{sourceUrl}</a>
+      </p>
+    </footer>
+  </body>
+</html>
+
+<script>
+  import '../scripts/main';
+</script>
+
+<style>
+  /* Retro monitor: a CSS-only case around the stage. Colours are the --crt-* tokens, the same in light and dark. */
+  .monitor { --pad: 24px; --chin: 52px; --stand: 18px; width: min(100%, max(420px, calc((100dvh - 200px) * 16 / 9 + 2 * var(--pad)))); margin: 12px auto 0; }
+  .bezel { position: relative; padding: var(--pad) var(--pad) 0; border-radius: 22px 22px 8px 8px; background: linear-gradient(165deg, var(--crt-case-light), var(--crt-case) 30%, var(--crt-case) 80%, var(--crt-case-shadow)); box-shadow: inset 0 3px 0 var(--crt-case-light), inset 0 -4px 0 var(--crt-case-shadow), inset 4px 0 0 var(--crt-case-light), inset -4px 0 0 var(--crt-case-shadow), 0 0 0 1px var(--crt-case-shadow), 0 14px 28px color-mix(in srgb, var(--crt-inset) 45%, transparent); }
+  .bezel .stage { border-radius: 16px / 20px; box-shadow: 0 0 0 4px var(--crt-inset), 0 0 0 6px var(--crt-case-shadow), 0 3px 0 6px var(--crt-case-light); }
+  .vents { position: absolute; top: 8px; left: 22%; right: 22%; height: 8px; background: repeating-linear-gradient(90deg, var(--crt-case-shadow) 0 3px, transparent 3px 9px); border-radius: 2px; }
+  .chin { display: flex; align-items: center; gap: 14px; height: var(--chin); padding: 0 6px; }
+  .badge { padding: 5px 12px; border-radius: 3px; background: var(--crt-badge); color: var(--crt-badge-text); font: 700 0.75rem/1 system-ui, sans-serif; letter-spacing: 0.18em; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--crt-badge-text) 25%, transparent); }
+  .led { width: 8px; height: 8px; margin-left: auto; border-radius: 50%; background: var(--crt-led-off); box-shadow: inset 0 0 0 1px var(--crt-inset); transition: background-color 0.2s, box-shadow 0.2s; }
+  .game[data-screen='play'] .led { background: var(--crt-led-on); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--crt-led-on) 70%, transparent); }
+  .knob { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--crt-case-light), var(--crt-case) 60%, var(--crt-case-shadow)); box-shadow: 0 0 0 2px var(--crt-case-shadow), 0 2px 3px color-mix(in srgb, var(--crt-inset) 40%, transparent); }
+  .stand { width: 38%; height: var(--stand); margin: 0 auto; background: linear-gradient(var(--crt-case-shadow), var(--crt-case) 40%, var(--crt-case-shadow)); clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); }
+  .crt-fx { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(135deg, color-mix(in srgb, var(--crt-glass-glare) 14%, transparent) 0, transparent 38%), radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--crt-inset) 45%, transparent) 100%), repeating-linear-gradient(to bottom, color-mix(in srgb, var(--crt-inset) 18%, transparent) 0 1px, transparent 1px 3px); }
+  .game[data-crt='off'] .crt-fx { display: none; }
+  .hud, .panel, .pad, .digs { z-index: 2; }
+  @media (prefers-reduced-motion: reduce) {
+    .led { transition: none; }
+  }
+
+  .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 100dvh; margin: 0 auto; overflow: hidden; background: var(--ink); touch-action: none; user-select: none; -webkit-user-select: none; }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+
+  .hud { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; padding: 8px 12px; color: var(--on-sky); font-size: 0.9rem; pointer-events: none; }
+  .hud button { pointer-events: auto; margin-left: auto; }
+
+  .panel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; overflow-y: auto; text-align: center; color: var(--bg); background: color-mix(in srgb, var(--ink) 88%, transparent); }
+  .panel[hidden] { display: none; }
+  .panel h1, .panel h2 { margin: 0; color: var(--bg); }
+  .panel p { margin: 0; max-width: 46ch; }
+  .panel a { color: var(--bg); }
+  /* The pause panel holds the most controls: tighter gaps, and safe centring so the heading never scrolls out of reach. */
+  .panel.compact { gap: 6px; padding: 8px 16px; justify-content: safe center; }
+  .panel.compact :global(.gfx legend) { margin-bottom: 4px; }
+  .settings-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
+
+  .game :global(.gbtn) { min-height: 48px; min-width: 48px; padding: 0 18px; border: 2px solid var(--bg); border-radius: 10px; background: transparent; color: var(--bg); font: inherit; font-weight: 500; cursor: pointer; }
+  .game :global(.gbtn:hover:not(:disabled)), .game :global(.gbtn:focus-visible) { background: var(--bg); color: var(--ink); }
+  .game :global(.gbtn:disabled) { opacity: 0.35; cursor: not-allowed; }
+  .game :global(.gbtn[data-act="toggle-effects"][aria-pressed="false"]), .game :global(.gbtn[data-act="toggle-music"][aria-pressed="false"]), .game :global(.gbtn[data-act="toggle-crt"][aria-pressed="false"]) { text-decoration: line-through; opacity: 0.7; }
+  .game :global(.gbtn[data-scores-tab][aria-pressed="false"]), .game :global(.gbtn[data-scores-scope][aria-pressed="false"]) { opacity: 0.7; }
+  .game :global(.gbtn[data-scores-tab][aria-pressed="true"]), .game :global(.gbtn[data-scores-scope][aria-pressed="true"]) { background: var(--bg); color: var(--ink); }
+  .game :global(.gbtn.small) { min-height: 36px; min-width: 44px; padding: 0 10px; }
+  .hud :global(.gbtn) { border-color: var(--on-sky); color: var(--on-sky); }
+
+  .levels { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 560px; }
+  .levels :global(.gbtn) { padding: 0; }
+  .endless { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+  .endless input { width: 12ch; min-height: 44px; padding: 0 8px; border: 2px solid var(--bg); border-radius: 8px; background: transparent; color: var(--bg); font: inherit; }
+
+  .choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .board { max-width: 100%; overflow-x: auto; }
+  .board table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .board caption { padding-bottom: 6px; font-weight: 500; }
+  .board th, .board td { padding: 4px 10px; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--bg) 35%, transparent); }
+  .board th[hidden] { display: none; }
+  .board tr[aria-current='true'] { font-weight: 700; background: color-mix(in srgb, var(--bg) 22%, transparent); outline: 2px solid var(--bg); outline-offset: -2px; }
+  .note, .fine { min-height: 1.4em; font-size: 0.9rem; }
+  .slots { display: flex; gap: 14px; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .slot :global(.gbtn) { min-width: 56px; min-height: 56px; padding: 0; font-size: 1.2rem; }
+  .letter { display: grid; place-items: center; width: 56px; height: 64px; border: 2px solid var(--bg); border-radius: 10px; font-size: 2rem; font-weight: 700; }
+  .letter:focus-visible { background: var(--bg); color: var(--ink); outline: 3px solid var(--on-sky); outline-offset: 2px; }
+
+  .gfx-note { position: absolute; left: 50%; bottom: 8px; z-index: 4; max-width: calc(100% - 24px); margin: 0; transform: translateX(-50%); text-align: center; font-size: 0.9rem; pointer-events: none; }
+  .gfx-note:not(:empty) { padding: 6px 12px; border-radius: 8px; color: var(--bg); background: color-mix(in srgb, var(--ink) 88%, transparent); }
+
+  .touch { display: none; }
+  .touch button { width: 56px; height: 56px; border: 2px solid var(--on-sky); border-radius: 12px; background: color-mix(in srgb, var(--ink) 55%, transparent); color: var(--on-sky); font: inherit; font-weight: 700; }
+  .pad { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 4px; grid-template: 'x1 up x2' 56px 'left x3 right' 56px 'x4 down x5' 56px / 56px 56px 56px; }
+  .digs { position: absolute; right: 12px; bottom: 24px; display: flex; gap: 12px; }
+  .digs button { width: 72px; height: 64px; }
+  @media (pointer: coarse) {
+    .game[data-screen='play'] .touch { display: block; }
+  }
+  .game:not([data-screen='play']) .hud { display: none; }
+
+  .rotate { display: none; }
+  @media (orientation: portrait) and (pointer: coarse) {
+    .rotate { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; font-weight: 500; color: var(--bg); background: var(--ink); }
+  }
+
+  /* Narrow, short, installed or fullscreen: no case. The wrappers take no space and the stage is edge to edge, as before. */
+  @media (max-width: 820px), (max-height: 520px), (display-mode: fullscreen), (display-mode: standalone) {
+    .monitor, .bezel { display: contents; }
+    .vents, .chin, .stand { display: none; }
+    .bezel .stage { border-radius: 0; box-shadow: none; }
+  }
+
+  /* Installed or fullscreen: the game is the whole screen. */
+  @media (display-mode: fullscreen), (display-mode: standalone) {
+        .stage { height: 100dvh; aspect-ratio: auto; }
+  }
+</style>
