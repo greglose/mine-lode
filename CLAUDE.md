@@ -40,7 +40,7 @@ site and base (defaults `https://mine-lode.cantlosesoftware.com`, `/`).
   (README, the page's How to play section, and the company policy).
 - Colours only in `src/styles/tokens.css` (two dark blocks identical, `--crt-*` identical in light and dark); game canvas
   textures are exempt. Sound effects are synthesized (`EFFECTS` in `audio.ts`). Optional music: `public/music/`, listed in
-  `src/data/game.ts`.
+  `src/data/game.ts`; `play` is a list (file 1 = level 1, file 2 = level 2, level 3+ a random pick from the whole list, `pickPlayTrack`), 3 MB cap per file.
 - Never name the games that inspired Mine Lode or any computer maker/model (`tests/brand.test.ts` scans `dist`). No
   mention of the owner's health-app brand. ASCII only in content: `'` and `-`, no curly quotes or long dashes.
 - Extend `tests/runtime.test.ts` whenever `src/scripts/main.ts` changes. `init()` stays the last statement of `main.ts`.

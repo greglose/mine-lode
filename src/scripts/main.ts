@@ -14,7 +14,7 @@ import { step } from '../lib/sim';
 import { initState, type GameEvent, type GameState } from '../lib/state';
 import { TUNE_NAMES } from '../lib/tunes';
 import { parseBackground } from '../lib/color';
-import { parseTracks } from '../lib/music';
+import { parseTracks, pickPlayTrack, trackCount } from '../lib/music';
 import { dayKey, needsInitials, scoreEntry } from '../lib/scores';
 import { createAudio } from './audio';
 import { createInput } from './input';
@@ -59,7 +59,11 @@ function init(): void {
   let stamp: string | null = null;
   let games = 0;
 
-  const audio = createAudio(() => (typeof AudioContext === 'undefined' ? null : new AudioContext()), { tracks: parseTracks(root.dataset.music, TUNE_NAMES) });
+  const tracks = parseTracks(root.dataset.music, TUNE_NAMES);
+  const audio = createAudio(() => (typeof AudioContext === 'undefined' ? null : new AudioContext()), { tracks });
+  /** Which play file the current level uses; picked once per level (a retry after a death keeps it). */
+  let playVariant = 0;
+  let pickedFor = '';
   audio.setEffects(save.effects);
   audio.setMusic(save.music);
   const showCrt = (on: boolean): void => {
@@ -78,7 +82,8 @@ function init(): void {
     input.clear();
     if (next === 'pause') audio.pause();
     else audio.resume();
-    audio.music(next === 'play' ? 'play' : next === 'menu' ? 'menu' : null);
+    if (next === 'play') audio.music('play', playVariant);
+    else audio.music(next === 'menu' ? 'menu' : null);
   };
 
   const renderMenu = (): void => {
@@ -225,6 +230,11 @@ function init(): void {
     acc = 0;
     settled = false;
     hud();
+    const levelKey = `${games}:${session.level}`;
+    if (levelKey !== pickedFor) {
+      pickedFor = levelKey;
+      playVariant = pickPlayTrack(trackCount(tracks.play), session.level, Math.random);
+    }
     show('play');
     decorate();
     renderer?.draw(state);

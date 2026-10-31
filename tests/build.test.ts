@@ -149,9 +149,11 @@ describe('web manifest and icons', () => {
     expect($('meta[name="theme-color"]').attr('content')).toBe('#1B2A3A');
     expect($('header, nav').length).toBe(0);
   });
-  it('carries the background colour for the renderer and no music tracks today', () => {
+  it('carries the background colour for the renderer and the play tracks as a list of urls', () => {
     expect(html('index.html')('[data-game][data-bg]').attr('data-bg')).toBe('#1B2A3A');
-    expect(html('index.html')('[data-game]').attr('data-music')).toBe('{}');
+    expect(JSON.parse(html('index.html')('[data-game]').attr('data-music')!)).toEqual({
+      play: ['/music/pulsing-drive-1.mp3', '/music/pulsing-drive-2.mp3'],
+    });
   });
   it('links the source and the publisher in the footer, and states the privacy facts in the page', () => {
     const $ = html('index.html');

@@ -428,3 +428,92 @@ describe('music files', () => {
     expect(ctx.sources.length).toBe(3);
   });
 });
+
+describe('music variants', () => {
+  const tracks = { menu: '/music/menu.mp3', play: ['/music/a.mp3', '/music/b.mp3'] };
+  const setup = (load = vi.fn(async (_u: string) => new ArrayBuffer(8))) => {
+    const ctx = fakeContext();
+    const audio = createAudio(() => ctx as unknown as AudioContext, { tracks, load });
+    return { ctx, audio, load };
+  };
+
+  it('loads and plays the file of the selected variant through the music bus', async () => {
+    const { ctx, audio, load } = setup();
+    audio.unlock();
+    audio.music('play', 1);
+    expect(load).toHaveBeenCalledWith('/music/b.mp3');
+    expect(load).not.toHaveBeenCalledWith('/music/a.mp3');
+    await flush();
+    expect(ctx.sources.length).toBe(1);
+    expect(ctx.sources[0].loop).toBe(true);
+    const gain = ctx.nodes.find((n) => n.kind === 'gain' && (n.connect as Spy).mock.calls.length > 0 && ctx.sources[0].connect.mock.calls[0][0] === n);
+    expect(gain).toBeDefined();
+    const bus = (gain!.connect as Spy).mock.calls[0][0] as FakeNode;
+    expect(bus.kind).toBe('gain');
+  });
+  it('defaults to variant 0', () => {
+    const { audio, load } = setup();
+    audio.unlock();
+    audio.music('play');
+    expect(load).toHaveBeenCalledWith('/music/a.mp3');
+  });
+  it('does not restart when the same variant is selected again', async () => {
+    const { ctx, audio, load } = setup();
+    audio.unlock();
+    audio.music('play', 1);
+    await flush();
+    audio.music('play', 1);
+    await flush();
+    expect(ctx.sources.length).toBe(1);
+    expect(ctx.sources[0].stop).not.toHaveBeenCalled();
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+  it('swaps to the other file when a different variant is selected', async () => {
+    const { ctx, audio, load } = setup();
+    audio.unlock();
+    audio.music('play', 0);
+    await flush();
+    audio.music('play', 1);
+    await flush();
+    expect(ctx.sources[0].stop).toHaveBeenCalled();
+    expect(ctx.sources.length).toBe(2);
+    expect(ctx.sources[1].start).toHaveBeenCalled();
+    expect(load).toHaveBeenCalledWith('/music/b.mp3');
+  });
+  it('plays a decoded variant again without loading it twice', async () => {
+    const { audio, load } = setup();
+    audio.unlock();
+    audio.music('play', 0);
+    await flush();
+    audio.music('play', 1);
+    await flush();
+    audio.music('play', 0);
+    await flush();
+    expect(load.mock.calls.filter(([u]) => u === '/music/a.mp3').length).toBe(1);
+  });
+  it('falls back to the chiptune when the selected variant fails, while another variant works', async () => {
+    const load = vi.fn(async (u: string) => {
+      if (u === '/music/b.mp3') throw new Error('404');
+      return new ArrayBuffer(8);
+    });
+    const { ctx, audio } = setup(load);
+    audio.unlock();
+    audio.music('play', 1);
+    await flush();
+    const made = ctx.made;
+    ctx.currentTime = 10;
+    vi.advanceTimersByTime(200);
+    expect(ctx.made).toBeGreaterThan(made);
+    expect(ctx.sources.every((s) => s.start.mock.calls.length === 0)).toBe(true);
+    audio.music('play', 0);
+    await flush();
+    expect(ctx.sources.some((s) => s.loop && s.start.mock.calls.length > 0)).toBe(true);
+  });
+  it('uses the chiptune for a variant with no file', () => {
+    const { ctx, audio, load } = setup();
+    audio.unlock();
+    audio.music('play', 5);
+    expect(load).not.toHaveBeenCalled();
+    expect(ctx.made).toBeGreaterThan(0);
+  });
+});
