@@ -15,7 +15,7 @@ assertCampaignValid();
 
 const { name, tagline, description, themeColor, shortName, music, sourceUrl, companyUrl, privacyUrl } = GAME;
 const base = import.meta.env.BASE_URL;
-// A configured music file that is missing or over 3 MB fails the build.
+// A configured music file (a play list included) that is missing, badly named or over 3 MB fails the build.
 assertMusicValid(music, (path) => {
   try {
     return statSync(path).size;

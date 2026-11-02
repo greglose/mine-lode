@@ -13,8 +13,14 @@ describe('campaign', () => {
     expect(() => assertCampaignValid()).not.toThrow();
   });
   it('ramps guards from none to five as designed', () => {
-    expect(CAMPAIGN_GUARDS).toEqual([0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5]);
+    expect(CAMPAIGN_GUARDS).toEqual([0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5]);
     expect(CAMPAIGN.map((l) => l.guards.length)).toEqual(CAMPAIGN_GUARDS);
+  });
+  it('keeps level 1 guard-free and gives every later level at least one guard', () => {
+    expect(CAMPAIGN[0].guards.length).toBe(0);
+    CAMPAIGN.slice(1).forEach((level, i) => {
+      expect(level.guards.length, `level ${i + 2}`).toBeGreaterThanOrEqual(1);
+    });
   });
   it('has between 4 and 12 gold in every level', () => {
     CAMPAIGN.forEach((level, i) => {

@@ -76,7 +76,8 @@ export interface GameAudio {
   play(sounds: readonly Sound[]): void;
   setEffects(on: boolean): void;
   setMusic(on: boolean): void;
-  music(name: TuneName | null): void;
+  /** `variant` picks which of a tune's files plays; selecting the one already playing does nothing. */
+  music(name: TuneName | null, variant?: number): void;
   pause(): void;
   resume(): void;
 }
@@ -85,7 +86,7 @@ const LOOKAHEAD_S = 0.15;
 const TIMER_MS = 50;
 
 export interface AudioOptions {
-  tracks?: Partial<Record<TuneName, string>>;
+  tracks?: Partial<Record<TuneName, string | readonly string[]>>;
   load?: (url: string) => Promise<ArrayBuffer>;
 }
 
@@ -110,9 +111,9 @@ const fetchBytes = async (url: string): Promise<ArrayBuffer> => {
 export function createAudio(makeContext: () => AudioContext | null, options: AudioOptions = {}): GameAudio {
   const tracks = options.tracks ?? {};
   const load = options.load ?? fetchBytes;
-  const decoded = new Map<TuneName, AudioBuffer>();
-  const started = new Set<TuneName>();
-  const failed = new Set<TuneName>();
+  const decoded = new Map<string, AudioBuffer>();
+  const started = new Set<string>();
+  const failed = new Set<string>();
   let source: AudioBufferSourceNode | null = null;
   let ctx: AudioContext | null = null;
   let unlocked = false;
@@ -120,6 +121,7 @@ export function createAudio(makeContext: () => AudioContext | null, options: Aud
   let musicOn = true;
   let paused = false;
   let tune: TuneName | null = null;
+  let tuneVariant = 0;
   let timer: ReturnType<typeof setInterval> | undefined;
   let stepIndex = 0;
   let nextTime = 0;
@@ -231,19 +233,26 @@ export function createAudio(makeContext: () => AudioContext | null, options: Aud
     }
   };
 
-  const fetchTrack = (name: TuneName): void => {
-    const url = tracks[name];
-    if (!url || started.has(name)) return;
-    started.add(name);
-    const fail = (): void => void failed.add(name);
+  const keyOf = (name: TuneName, variant: number): string => `${name}#${variant}`;
+  const urlOf = (name: TuneName, variant: number): string | undefined => {
+    const t = tracks[name];
+    return typeof t === 'string' ? (variant === 0 ? t : undefined) : t?.[variant];
+  };
+
+  const fetchTrack = (name: TuneName, variant: number): void => {
+    const url = urlOf(name, variant);
+    const key = keyOf(name, variant);
+    if (!url || started.has(key)) return;
+    started.add(key);
+    const fail = (): void => void failed.add(key);
     const arrived = (bytes: ArrayBuffer): void => {
       const context = ctx;
       if (!context) return fail();
       try {
         context.decodeAudioData(bytes).then(
           (buffer) => {
-            decoded.set(name, buffer);
-            if (!swapToBuffer(name)) failed.add(name);
+            decoded.set(key, buffer);
+            if (!swapToBuffer(name, variant)) failed.add(key);
           },
           fail,
         );
@@ -259,9 +268,9 @@ export function createAudio(makeContext: () => AudioContext | null, options: Aud
   };
 
   /** Replaces the chiptune with the decoded file if it is still the wanted tune. Returns false only when playback failed. */
-  const swapToBuffer = (name: TuneName): boolean => {
-    if (!ctx || tune !== name || !musicOn || paused || source) return true;
-    const buffer = decoded.get(name);
+  const swapToBuffer = (name: TuneName, variant: number): boolean => {
+    if (!ctx || tune !== name || tuneVariant !== variant || !musicOn || paused || source) return true;
+    const buffer = decoded.get(keyOf(name, variant));
     if (!buffer) return true;
     if (timer !== undefined) clearInterval(timer);
     timer = undefined;
@@ -281,9 +290,10 @@ export function createAudio(makeContext: () => AudioContext | null, options: Aud
   const syncMusic = (): void => {
     stopMusic();
     if (!ctx || !tune || !musicOn || paused) return;
-    const ready = decoded.get(tune);
-    if (ready && !failed.has(tune) && playBuffer(ready)) return;
-    fetchTrack(tune);
+    const key = keyOf(tune, tuneVariant);
+    const ready = decoded.get(key);
+    if (ready && !failed.has(key) && playBuffer(ready)) return;
+    fetchTrack(tune, tuneVariant);
     startChiptune();
   };
 
@@ -315,9 +325,10 @@ export function createAudio(makeContext: () => AudioContext | null, options: Aud
       musicOn = on;
       syncMusic();
     },
-    music(name) {
-      if (name === tune && (timer !== undefined || source)) return;
+    music(name, variant = 0) {
+      if (name === tune && variant === tuneVariant && (timer !== undefined || source)) return;
       tune = name;
+      tuneVariant = variant;
       syncMusic();
     },
     pause() {

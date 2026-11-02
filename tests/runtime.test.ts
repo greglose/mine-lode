@@ -76,6 +76,15 @@ vi.mock('../src/lib/session', async (importOriginal) => {
   return { ...real, newSession: (...a: Parameters<typeof real.newSession>) => ({ ...real.newSession(...a), score: net.startScore }) };
 });
 
+// Records what the shell asks the audio engine to play; every other method is a no-op.
+const sound = vi.hoisted(() => ({ music: [] as Array<[string | null, number | undefined]> }));
+vi.mock('../src/scripts/audio', () => ({
+  createAudio: () => ({
+    unlock: () => {}, play: () => {}, setEffects: () => {}, setMusic: () => {}, pause: () => {}, resume: () => {},
+    music: (name: string | null, variant?: number) => void sound.music.push([name, variant]),
+  }),
+}));
+
 let frame: FrameRequestCallback = () => {};
 const root = () => document.querySelector<HTMLElement>('[data-game]')!;
 const q = (sel: string) => root().querySelector<HTMLElement>(sel)!;
@@ -111,6 +120,7 @@ beforeEach(() => {
   localStorage.clear();
   Object.assign(net, { stamp: null, top: null, post: null, posted: [], token: null, opened: 0, startScore: 0 });
   renderer.fail = false;
+  sound.music.length = 0;
   renderer.draws = 0;
   renderer.effects = 0;
   renderer.modernFails = false;
@@ -162,6 +172,45 @@ describe('music setting', () => {
       click('[data-act="campaign"]');
       expect(root().dataset.screen).toBe('play');
     }
+  });
+});
+
+describe('per-level music', () => {
+  const TRACKS = '{"play":["/music/a.mp3","/music/b.mp3","/music/c.mp3"]}';
+  const lastPlay = () => sound.music.filter(([n]) => n === 'play').at(-1);
+  it('keeps the menu on the generated tune, with no variant', async () => {
+    await boot(TRACKS);
+    expect(sound.music.at(-1)).toEqual(['menu', undefined]);
+  });
+  it('plays track 0 on level 1 and track 1 on level 2', async () => {
+    localStorage.setItem('cls.mine-lode', JSON.stringify({
+      version: 2, unlocked: 3, best: { campaign: 0, endless: 0 }, lastSeed: '', effects: true, music: true, crt: true, graphics: 'classic',
+    }));
+    await boot(TRACKS);
+    q('[data-level="1"]').click();
+    expect(lastPlay()).toEqual(['play', 0]);
+    click('[data-act="menu"]');
+    q('[data-level="2"]').click();
+    expect(lastPlay()).toEqual(['play', 1]);
+  });
+  it('picks at random from level 3 on: the last track at rand 0.99, the first at rand 0', async () => {
+    localStorage.setItem('cls.mine-lode', JSON.stringify({
+      version: 2, unlocked: 5, best: { campaign: 0, endless: 0 }, lastSeed: '', effects: true, music: true, crt: true, graphics: 'classic',
+    }));
+    await boot(TRACKS);
+    const rand = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    q('[data-level="5"]').click();
+    expect(lastPlay()).toEqual(['play', 2]);
+    click('[data-act="menu"]');
+    rand.mockReturnValue(0);
+    q('[data-level="5"]').click();
+    expect(lastPlay()).toEqual(['play', 0]);
+    rand.mockRestore();
+  });
+  it('plays variant 0 when no track list is configured', async () => {
+    await boot();
+    click('[data-act="campaign"]');
+    expect(lastPlay()).toEqual(['play', 0]);
   });
 });
 

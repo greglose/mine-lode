@@ -73,7 +73,7 @@ tests/                           build, runtime (happy-dom), service worker, sco
 
 - **Determinism.** Nothing under `src/lib/` may call `Math.random` or `Date.now`, or touch the DOM. Randomness comes
   from `rng.ts`; time is always an argument. The simulation runs on a fixed tick.
-- **Levels** are 16 rows of 28 characters. There are twenty, all original, in a teaching order. `CAMPAIGN_GUARDS`
+- **Levels** are 16 rows of 28 characters. There are twenty, all original, in a teaching order (level 1 has no guards, 2-6 one, 7-10 two, 11-14 three, 15-18 four, 19-20 five). `CAMPAIGN_GUARDS`
   (in `src/lib/limits.ts`) fixes the guard count per level and `assertCampaignValid` enforces it; the page's build step
   also runs a solver over every level, so a level that cannot be finished fails the build. The solver ignores guards,
   so check guard starts by eye. Gold cannot sit on a rope or ladder cell.

@@ -25,7 +25,7 @@ site and base (defaults `https://mine-lode.cantlosesoftware.com`, `/`).
 
 - `src/lib/` is pure and deterministic: no `Math.random`, `Date.now`, or DOM. Randomness from `rng.ts`; time is an argument.
 - `render.ts` / `render-modern.ts` are thin shells over `sceneOf` (`src/lib/scene.ts`); what is visible is decided and tested there.
-- Levels: `src/levels/NN.txt`, 16 rows of 28 characters, twenty of them. `CAMPAIGN_GUARDS` in `limits.ts` is enforced by
+- Levels: `src/levels/NN.txt`, 16 rows of 28 characters, twenty of them (level 1 has no guards, 2-6 one, 7-10 two, 11-14 three, 15-18 four, 19-20 five). `CAMPAIGN_GUARDS` in `limits.ts` is enforced by
   `assertCampaignValid`, and the page frontmatter runs it, so an unfinishable level fails the build. The solver ignores
   guards; check guard starts by eye. Gold cannot sit on a rope or ladder cell.
 - Guard pursuit (`guards.ts`) is the classic rating rule, not shortest-path. Its quirks are intended. Do not "fix" them.
@@ -40,7 +40,7 @@ site and base (defaults `https://mine-lode.cantlosesoftware.com`, `/`).
   (README, the page's How to play section, and the company policy).
 - Colours only in `src/styles/tokens.css` (two dark blocks identical, `--crt-*` identical in light and dark); game canvas
   textures are exempt. Sound effects are synthesized (`EFFECTS` in `audio.ts`). Optional music: `public/music/`, listed in
-  `src/data/game.ts`.
+  `src/data/game.ts`; `play` is a list (file 1 = level 1, file 2 = level 2, level 3+ a random pick from the whole list, `pickPlayTrack`), 3 MB cap per file.
 - Never name the games that inspired Mine Lode or any computer maker/model (`tests/brand.test.ts` scans `dist`). No
   mention of the owner's health-app brand. ASCII only in content: `'` and `-`, no curly quotes or long dashes.
 - Extend `tests/runtime.test.ts` whenever `src/scripts/main.ts` changes. `init()` stays the last statement of `main.ts`.
