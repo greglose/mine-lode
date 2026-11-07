@@ -58,7 +58,7 @@ const touchButtons = [
   </head>
   <body>
     <main>
-  <div class="game" data-game data-music={JSON.stringify(tracks)} data-bg={themeColor} data-screen="menu" data-turnstile-key={turnstileKey}>
+  <div class="game" data-game data-music={JSON.stringify(tracks)} data-bg={themeColor} data-site={canonical} data-screen="menu" data-turnstile-key={turnstileKey}>
     <div class="monitor" data-monitor>
     <div class="bezel">
     <div class="vents" aria-hidden="true" data-decor></div>
@@ -95,6 +95,8 @@ const touchButtons = [
           <label>Seed <input data-seed maxlength={SEED_MAX} autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="random" /></label>
           <button type="button" class="gbtn" data-act="endless">Play endless</button>
         </div>
+        <button type="button" class="gbtn" data-act="daily" aria-describedby="daily-hint">Daily Lode</button>
+        <span id="daily-hint" hidden>One new level every day, the same for everyone</span>
         <button type="button" class="gbtn" data-act="scores">High scores</button>
         <GraphicsRadios where="menu" />
         <p class="best">Best: campaign <b data-best-campaign>0</b>, endless <b data-best-endless>0</b></p>
@@ -125,6 +127,27 @@ const touchButtons = [
         <h2 data-over-title>Game over</h2>
         <p>Score <b data-over-score>0</b></p>
         <button type="button" class="gbtn" data-act="menu">Back to menu</button>
+      </div>
+
+      <div class="panel" data-panel="daily" hidden>
+        <h2>Daily Lode</h2>
+        <p>Today: <b data-daily-key></b></p>
+        <p data-daily-result></p>
+        <p data-daily-streak></p>
+        <p class="fine" data-daily-countdown></p>
+        <button type="button" class="gbtn" data-act="daily-play">Play today's level</button>
+        <button type="button" class="gbtn" data-act="menu">Back to menu</button>
+      </div>
+
+      <div class="panel" data-panel="dailyresult" hidden>
+        <h2 data-daily-title>Daily Lode</h2>
+        <pre class="share" data-daily-share tabindex="0" aria-label="Your result, ready to share"></pre>
+        <p class="note" data-daily-status role="status"></p>
+        <div class="choices">
+          <button type="button" class="gbtn" data-act="daily-share">Share</button>
+          <button type="button" class="gbtn" data-act="daily-again">Play again</button>
+          <button type="button" class="gbtn" data-act="menu">Back to menu</button>
+        </div>
       </div>
 
       <div class="panel" data-panel="scores" hidden>
@@ -290,6 +313,7 @@ const touchButtons = [
   .board th, .board td { padding: 4px 10px; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--bg) 35%, transparent); }
   .board th[hidden] { display: none; }
   .board tr[aria-current='true'] { font-weight: 700; background: color-mix(in srgb, var(--bg) 22%, transparent); outline: 2px solid var(--bg); outline-offset: -2px; }
+  .share { margin: 0; max-width: 100%; padding: 8px 12px; border: 2px solid var(--bg); border-radius: 8px; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
   .note, .fine { min-height: 1.4em; font-size: 0.9rem; }
   .slots { display: flex; gap: 14px; }
   .slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }

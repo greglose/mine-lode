@@ -3,14 +3,15 @@
 An original voxel dig-and-collect platformer for the browser. Collect every gold block, dig holes to trap the guards,
 then climb out. Twenty handmade campaign levels, an Endless mode that generates levels from a seed, Classic (canvas)
 and Modern (WebGL, Three.js) graphics, synthesized sound with an optional MP3 music slot, and an offline-capable PWA.
-A shared high-score board is optional; every device keeps its own top ten.
+A Daily Lode mode gives everyone the same generated level each day, with a streak and a shareable result (stored on
+your device only). A shared high-score board is optional; every device keeps its own top ten.
 
 Play it: https://mine-lode.cantlosesoftware.com/
 
 ## Privacy
 
-- **On your device (always):** progress, sound and graphics settings, your own Campaign and Endless top-ten tables and
-  your last initials are kept in this browser's `localStorage` under the key `cls.mine-lode`. No analytics, no cookies,
+- **On your device (always):** progress, sound and graphics settings, your own Campaign and Endless top-ten tables, your
+  Daily Lode results and your last initials are kept in this browser's `localStorage` under the key `cls.mine-lode`. No analytics, no cookies,
   no tracking.
 - **If you post a score to the shared board:** the page sends three initials, the score, the level reached, the mode
   (Campaign or Endless) and, for Endless, the seed. They are shown publicly on the board. A Cloudflare Turnstile human

@@ -31,7 +31,7 @@ site and base (defaults `https://mine-lode.cantlosesoftware.com`, `/`).
 - Guard pursuit (`guards.ts`) is the classic rating rule, not shortest-path. Its quirks are intended. Do not "fix" them.
 - Modern graphics load by dynamic `import()` only; build test caps: 250 KB gzipped start-up script, 120 KB Modern chunk,
   no image or model files beyond the three icons.
-- Save is `localStorage` key `cls.mine-lode`, version 2 (existing saves must keep loading). The device top-ten is saved
+- Save is `localStorage` key `cls.mine-lode`, version 3 (versions 1 and 2 migrate on load; existing saves must keep loading). The device top-ten is saved
   first; the shared post is an extra and never blocks play.
 - Turnstile: the script is injected by `scores-ui.ts` when the initials panel opens, never written into page HTML. The
   service worker never touches `/api/` or another origin. A `CF_PAGES` build without `PUBLIC_TURNSTILE_SITE_KEY` fails
@@ -44,3 +44,9 @@ site and base (defaults `https://mine-lode.cantlosesoftware.com`, `/`).
 - Never name the games that inspired Mine Lode or any computer maker/model (`tests/brand.test.ts` scans `dist`). No
   mention of the owner's health-app brand. ASCII only in content: `'` and `-`, no curly quotes or long dashes.
 - Extend `tests/runtime.test.ts` whenever `src/scripts/main.ts` changes. `init()` stays the last statement of `main.ts`.
+- Daily Lode (third mode, `src/lib/daily.ts`): one generated level per local calendar day, `generateLevel('daily-YYYY-MM-DD', DAILY_DIFFICULTY)` with
+  `DAILY_DIFFICULTY` = 3 (the lowest level number with two guards). One level, five lives; deaths and fixed-tick play time
+  make the result. Save field `daily: { results: Record<key, { cleared, timeMs, deaths }>, streak, lastKey? }`, newest 60
+  keys; replays keep the better result (cleared, then fewer deaths, then faster). The result panel offers Share (Web Share
+  API, else clipboard). `#daily` in the URL opens the panel. No server: daily results never touch the score boards, the
+  scores API or the privacy wording. `Session.mode` is `PlayMode` (`Mode | 'daily'`); `Mode` stays campaign/endless.

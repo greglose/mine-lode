@@ -655,6 +655,141 @@ describe('initials after a game', () => {
   });
 });
 
+describe('daily lode', () => {
+  const SITE = 'https://mine-lode.cantlosesoftware.com/';
+  /** Clock fixed at 20:30 local on 2026-11-07; only Date is faked so timers and promises run for real. */
+  const atEvening = () => vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 10, 7, 20, 30, 0) });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    window.location.hash = '';
+  });
+  const endDaily = () => {
+    click('[data-act="daily"]');
+    click('[data-act="daily-play"]');
+    for (let i = 0; i < 5; i++) key('r');
+  };
+  it('plays again from the result panel with a fresh set of lives', async () => {
+    atEvening();
+    await boot();
+    endDaily();
+    click('[data-act="daily-again"]');
+    expect(root().dataset.screen).toBe('play');
+    expect(q('[data-hud-lives]').textContent).toBe('5');
+  });
+
+  it('has a Daily button on the menu', async () => {
+    await boot();
+    expect(q('[data-panel="menu"] [data-act="daily"]').textContent).toMatch(/daily/i);
+  });
+  it('opens with today\'s key, a countdown and no result yet', async () => {
+    atEvening();
+    await boot();
+    click('[data-act="daily"]');
+    expect(root().dataset.screen).toBe('daily');
+    expect(q('[data-daily-key]').textContent).toBe('2026-11-07');
+    expect(q('[data-daily-countdown]').textContent).toBe('Next daily in 3:30');
+    expect(q('[data-daily-result]').textContent).toBe('Not played yet');
+    expect(q('[data-daily-streak]').textContent).toBe('Streak: 0 days');
+  });
+  it('shows the stored result and the streak', async () => {
+    atEvening();
+    seed({
+      version: 3,
+      daily: { results: { '2026-11-06': { cleared: true, timeMs: 61000, deaths: 1 }, '2026-11-07': { cleared: true, timeMs: 83000, deaths: 0 } }, streak: 2, lastKey: '2026-11-07' },
+    });
+    await boot();
+    click('[data-act="daily"]');
+    expect(q('[data-daily-result]').textContent).toBe('Cleared in 1:23, 0 deaths');
+    expect(q('[data-daily-streak]').textContent).toBe('Streak: 2 days');
+  });
+  it('opens straight from the #daily deep link', async () => {
+    atEvening();
+    window.location.hash = '#daily';
+    await boot();
+    expect(root().dataset.screen).toBe('daily');
+    expect(q('[data-daily-key]').textContent).toBe('2026-11-07');
+  });
+  it('plays today\'s level, with the random per-level music pick', async () => {
+    atEvening();
+    await boot('{"play":["/music/a.mp3","/music/b.mp3","/music/c.mp3"]}');
+    const rand = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    click('[data-act="daily"]');
+    click('[data-act="daily-play"]');
+    rand.mockRestore();
+    expect(root().dataset.screen).toBe('play');
+    expect(q('[data-hud-lives]').textContent).toBe('5');
+    expect(sound.music.filter(([n]) => n === 'play').at(-1)).toEqual(['play', 2]);
+  });
+  it('stores the result and renders the share text when the attempt ends', async () => {
+    atEvening();
+    net.startScore = 700;
+    await boot();
+    endDaily();
+    expect(root().dataset.screen).toBe('dailyresult');
+    expect(q('[data-daily-share]').textContent).toBe(`Daily Lode 2026-11-07 - not cleared, 5 deaths\n${SITE}`);
+    expect(saved().daily.results['2026-11-07']).toMatchObject({ cleared: false, deaths: 5 });
+    expect(saved().daily.lastKey).toBe('2026-11-07');
+  });
+  it('never asks for initials, posts a score or touches the boards or best scores', async () => {
+    atEvening();
+    net.startScore = 700;
+    await boot();
+    endDaily();
+    await settle();
+    expect(root().dataset.screen).not.toBe('initials');
+    expect(net.posted).toEqual([]);
+    expect(saved().scores).toEqual({ campaign: [], endless: [] });
+    expect(saved().best).toEqual({ campaign: 0, endless: 0 });
+  });
+  it('shares with the Web Share API when it exists', async () => {
+    atEvening();
+    const share = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { ...navigator, share });
+    await boot();
+    endDaily();
+    click('[data-act="daily-share"]');
+    await vi.waitFor(() => expect(share).toHaveBeenCalledWith({ text: `Daily Lode 2026-11-07 - not cleared, 5 deaths\n${SITE}` }));
+  });
+  it('copies to the clipboard otherwise and says so', async () => {
+    atEvening();
+    const writeText = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    await boot();
+    endDaily();
+    click('[data-act="daily-share"]');
+    await vi.waitFor(() => expect(q('[data-daily-status]').textContent).toBe('Copied to the clipboard.'));
+    expect(writeText).toHaveBeenCalledWith(`Daily Lode 2026-11-07 - not cleared, 5 deaths\n${SITE}`);
+  });
+  it('asks the player to copy by hand when neither is available', async () => {
+    atEvening();
+    vi.stubGlobal('navigator', {});
+    await boot();
+    endDaily();
+    click('[data-act="daily-share"]');
+    await vi.waitFor(() => expect(q('[data-daily-status]').textContent).toBe('Sharing is not available here. Select the text above to copy it.'));
+  });
+  it('lets the same day be replayed and keeps the better result', async () => {
+    atEvening();
+    seed({ version: 3, daily: { results: { '2026-11-07': { cleared: true, timeMs: 83000, deaths: 0 } }, streak: 1, lastKey: '2026-11-07' } });
+    await boot();
+    endDaily();
+    expect(root().dataset.screen).toBe('dailyresult');
+    expect(saved().daily.results['2026-11-07']).toEqual({ cleared: true, timeMs: 83000, deaths: 0 });
+    expect(q('[data-daily-share]').textContent).toContain('cleared in 1:23, 0 deaths');
+  });
+  it('goes back to the menu from both daily panels', async () => {
+    atEvening();
+    await boot();
+    click('[data-act="daily"]');
+    click('[data-panel="daily"] [data-act="menu"]');
+    expect(root().dataset.screen).toBe('menu');
+    endDaily();
+    click('[data-panel="dailyresult"] [data-act="menu"]');
+    expect(root().dataset.screen).toBe('menu');
+  });
+});
+
 describe('module shape', () => {
   it('calls init as its last statement', () => {
     const source = readFileSync(join(__dirname, '..', 'src/scripts/main.ts'), 'utf-8');

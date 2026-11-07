@@ -20,7 +20,7 @@ describe('Mine Lode page', () => {
   it('starts on the menu with the other panels hidden', () => {
     expect(game().attr('data-screen')).toBe('menu');
     expect(game().find('[data-panel="menu"]').attr('hidden')).toBeUndefined();
-    for (const p of ['pause', 'clear', 'over', 'error', 'scores', 'initials']) {
+    for (const p of ['pause', 'clear', 'over', 'error', 'scores', 'initials', 'daily', 'dailyresult']) {
       expect(game().find(`[data-panel="${p}"]`).attr('hidden'), p).toBeDefined();
     }
   });
@@ -32,10 +32,12 @@ describe('Mine Lode page', () => {
       'button[data-act="reload"]', 'button[data-act="resume"]', 'button[data-act="restart"]',
       'button[data-act="toggle-effects"][aria-pressed]', 'button[data-act="toggle-music"][aria-pressed]',
       'button[data-act="next"]', '[data-over-title]', '[data-over-score]',
+      'button[data-act="daily"]', 'button[data-act="daily-play"]', 'button[data-act="daily-again"]', 'button[data-act="daily-share"]', '[data-daily-key]',
+      '[data-daily-result]', '[data-daily-streak]', '[data-daily-countdown]', '[data-daily-share]', '[data-daily-status]',
       ...['left', 'right', 'up', 'down', 'digL', 'digR'].map((b) => `button[data-btn="${b}"]`),
     ];
     for (const sel of hooks) expect(game().find(sel).length, sel).toBe(1);
-    expect(game().find('button[data-act="menu"]').length).toBe(2);
+    expect(game().find('button[data-act="menu"]').length).toBe(4);
     expect(game().find('input[data-seed]').attr('maxlength')).toBe('32');
     expect(game().find('[data-update]').attr('hidden')).toBeDefined();
   });
@@ -183,7 +185,7 @@ describe('Mine Lode retro monitor frame', () => {
     expect(game().find('[data-monitor] .stage').length).toBe(1);
     expect(game().find('[data-monitor] .stage [data-canvas]').length).toBe(1);
     expect(game().find('[data-monitor] .stage .hud').length).toBe(1);
-    expect(game().find('[data-monitor] .stage [data-panel]').length).toBe(7);
+    expect(game().find('[data-monitor] .stage [data-panel]').length).toBe(9);
     expect(game().find('[data-monitor] .stage .touch').length).toBe(1);
     expect($()('[data-monitor]').parents('[data-game]').length).toBe(1);
   });
