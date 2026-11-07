@@ -1,13 +1,17 @@
 // Mine Lode shell: menus, HUD, the fixed-tick loop, and the wiring between the pure game and the browser.
 import { CAMPAIGN } from '../lib/campaign';
-import { stepsDue } from '../lib/clock';
+import { TICK_MS, stepsDue } from '../lib/clock';
+import {
+  DAILY_DIFFICULTY, dailyKey, dailyLevel, dailySeed, dailyShareText, dailyStreak, formatCountdown, formatTime, msUntilNextDaily,
+  recordDaily, type DailyResult,
+} from '../lib/daily';
 import { decorOf } from '../lib/decor';
 import { FALLBACK_NOTICE, isGraphics, levelSeed, type Graphics } from '../lib/graphics';
 import { generateLevel } from '../lib/generate';
 import type { Level } from '../lib/level';
 import { loadSave, withProgress, writeSave, type Save } from '../lib/save';
 import {
-  CAMPAIGN_LEVELS, afterClear, afterDeath, cleanSeed, newSession, type Mode, type Session,
+  CAMPAIGN_LEVELS, START_LIVES, afterClear, afterDeath, cleanSeed, newSession, type PlayMode, type Session,
 } from '../lib/session';
 import { effectsOf } from '../lib/scene';
 import { step } from '../lib/sim';
@@ -27,7 +31,7 @@ import { registerSW, safeStorage } from './pwa';
 /** How long the fallback notice stays up. */
 const NOTICE_MS = 8000;
 
-type Screen = 'menu' | 'play' | 'pause' | 'clear' | 'over' | 'error' | 'scores' | 'initials';
+type Screen = 'menu' | 'play' | 'pause' | 'clear' | 'over' | 'error' | 'scores' | 'initials' | 'daily' | 'dailyresult';
 const RESPAWN_MS = 900;
 
 function init(): void {
@@ -58,6 +62,11 @@ function init(): void {
   /** Start stamp of the running game; null until the server answers, or if it never does. */
   let stamp: string | null = null;
   let games = 0;
+  /** The Daily Lode attempt in progress: its day key and the play time so far (fixed ticks, so a pause never counts). */
+  let dailyPlay: { key: string; ms: number } | null = null;
+  /** The text of the last Daily result, for the Share button. */
+  let dailyShare = '';
+  let dailyTimer = 0;
 
   const tracks = parseTracks(root.dataset.music, TUNE_NAMES);
   const audio = createAudio(() => (typeof AudioContext === 'undefined' ? null : new AudioContext()), { tracks });
@@ -82,8 +91,29 @@ function init(): void {
     input.clear();
     if (next === 'pause') audio.pause();
     else audio.resume();
+    window.clearInterval(dailyTimer);
+    if (next === 'daily') {
+      renderDaily();
+      dailyTimer = window.setInterval(renderDaily, 15_000);
+    }
     if (next === 'play') audio.music('play', playVariant);
     else audio.music(next === 'menu' ? 'menu' : null);
+  };
+
+  const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+  const renderDaily = (): void => {
+    const now = new Date();
+    const key = dailyKey(now);
+    const result = save.daily.results[key];
+    q('[data-daily-key]').textContent = key;
+    q('[data-daily-result]').textContent = !result
+      ? 'Not played yet'
+      : result.cleared
+        ? `Cleared in ${formatTime(result.timeMs)}, ${plural(result.deaths, 'death')}`
+        : `Not cleared, ${plural(result.deaths, 'death')}`;
+    q('[data-daily-streak]').textContent = `Streak: ${plural(dailyStreak(save, key), 'day')}`;
+    q('[data-daily-countdown]').textContent = `Next daily in ${formatCountdown(msUntilNextDaily(now))}`;
   };
 
   const renderMenu = (): void => {
@@ -225,7 +255,9 @@ function init(): void {
 
   const startLevel = (): void => {
     if (!session) return;
-    level = session.mode === 'campaign' ? CAMPAIGN[session.level - 1] : generateLevel(session.seed, session.level);
+    if (session.mode === 'campaign') level = CAMPAIGN[session.level - 1];
+    else if (dailyPlay && session.mode === 'daily') level = dailyLevel(dailyPlay.key);
+    else level = generateLevel(session.seed, session.level);
     state = initState(level);
     acc = 0;
     settled = false;
@@ -240,20 +272,61 @@ function init(): void {
     renderer?.draw(state);
   };
 
-  const start = (mode: Mode, levelNumber: number, seed: string): void => {
+  const start = (mode: PlayMode, levelNumber: number, seed: string): void => {
     if (loading) {
       void loading.then(() => start(mode, levelNumber, seed));
       return;
     }
     if (!ready()) return;
     session = newSession(mode, levelNumber, seed);
-    // The stamp arrives in the background; a game never waits for it.
     const id = ++games;
     stamp = null;
-    void client.start(mode).then((s) => {
-      if (id === games) stamp = s;
-    });
+    // The stamp arrives in the background; a game never waits for it. Daily has no shared board, so it asks for none.
+    if (mode !== 'daily') {
+      void client.start(mode).then((s) => {
+        if (id === games) stamp = s;
+      });
+    }
     startLevel();
+  };
+
+  const startDaily = (): void => {
+    const key = dailyKey(new Date());
+    dailyPlay = { key, ms: 0 };
+    start('daily', DAILY_DIFFICULTY, dailySeed(key));
+  };
+
+  /** Ends a Daily attempt: stores the better result and shows the share text. Nothing is posted anywhere. */
+  const finishDaily = (cleared: boolean): void => {
+    if (!session || !dailyPlay) return;
+    const result: DailyResult = { cleared, timeMs: Math.round(dailyPlay.ms), deaths: START_LIVES - session.lives };
+    save = recordDaily(save, dailyPlay.key, result);
+    writeSave(store, save);
+    // The panel shares the best stored result for the day, so a worse replay never overwrites a good share.
+    dailyShare = dailyShareText(dailyPlay.key, save.daily.results[dailyPlay.key], root.dataset.site || undefined);
+    q('[data-daily-title]').textContent = cleared ? 'Daily cleared' : 'Daily over';
+    q('[data-daily-share]').textContent = dailyShare;
+    q('[data-daily-status]').textContent = '';
+    dailyPlay = null;
+    show('dailyresult');
+  };
+
+  const shareDaily = async (): Promise<void> => {
+    const status = q('[data-daily-status]');
+    try {
+      if (typeof navigator.share === 'function') {
+        await navigator.share({ text: dailyShare });
+        status.textContent = '';
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(dailyShare);
+        status.textContent = 'Copied to the clipboard.';
+      } else {
+        status.textContent = 'Sharing is not available here. Select the text above to copy it.';
+      }
+    } catch (e) {
+      // Closing the share sheet is not an error.
+      status.textContent = e instanceof DOMException && e.name === 'AbortError' ? '' : 'Could not share. Select the text above to copy it.';
+    }
   };
 
   const persist = (): void => {
@@ -265,7 +338,8 @@ function init(): void {
   const finish = (title: string, finished = false): void => {
     q('[data-over-title]').textContent = title;
     q('[data-over-score]').textContent = String(session?.score ?? 0);
-    const entry = session ? scoreEntry(session, finished, dayKey(new Date())) : null;
+    // Daily results never reach the score boards.
+    const entry = session && session.mode !== 'daily' ? scoreEntry({ ...session, mode: session.mode }, finished, dayKey(new Date())) : null;
     if (entry && needsInitials(save.scores[entry.mode], ui.sharedBoard(entry.mode), entry.row.score)) ui.askInitials(entry);
     else show('over');
   };
@@ -278,6 +352,10 @@ function init(): void {
     if (r.gameOver) {
       persist();
       audio.play(['gameOver']);
+      if (session.mode === 'daily') {
+        finishDaily(false);
+        return;
+      }
       finish('Game over');
       return;
     }
@@ -292,6 +370,10 @@ function init(): void {
     if (state.status === 'dead') {
       renderer?.shake();
       loseLife(RESPAWN_MS);
+      return;
+    }
+    if (session.mode === 'daily') {
+      finishDaily(true);
       return;
     }
     const r = afterClear(session, state.score);
@@ -311,6 +393,7 @@ function init(): void {
     const events: GameEvent[] = [];
     for (let i = 0; i < due.steps; i++) {
       const before = state;
+      if (dailyPlay) dailyPlay.ms += TICK_MS;
       const r = step(before, input.read());
       state = r.state;
       events.push(...r.events);
@@ -350,6 +433,17 @@ function init(): void {
         start('endless', 1, seed);
         break;
       }
+      case 'daily':
+        renderDaily();
+        show('daily');
+        break;
+      case 'daily-play':
+      case 'daily-again':
+        startDaily();
+        break;
+      case 'daily-share':
+        void shareDaily();
+        break;
       case 'pause':
         if (screen === 'play') show('pause');
         break;
@@ -367,6 +461,7 @@ function init(): void {
         break;
       case 'menu':
         session = null;
+        dailyPlay = null;
         state = null;
         renderMenu();
         show('menu');
@@ -442,6 +537,11 @@ function init(): void {
   });
   renderMenu();
   show('menu');
+  const openDeepLink = (): void => {
+    if (window.location.hash === '#daily' && screen === 'menu') show('daily');
+  };
+  openDeepLink();
+  window.addEventListener('hashchange', openDeepLink);
   showGraphics(save.graphics);
   // A saved Modern choice starts loading now, so it is usually ready by the time a game starts.
   if (save.graphics === 'modern') void loadModern();

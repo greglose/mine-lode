@@ -23,8 +23,8 @@ describe('save', () => {
   it('starts fresh when nothing is stored', () => {
     expect(loadSave(store())).toEqual(freshSave());
     expect(freshSave()).toEqual({
-      version: 2, unlocked: 1, best: { campaign: 0, endless: 0 }, lastSeed: '', effects: true, music: true, crt: true, graphics: 'classic',
-      scores: { campaign: [], endless: [] }, initials: '',
+      version: 3, unlocked: 1, best: { campaign: 0, endless: 0 }, lastSeed: '', effects: true, music: true, crt: true, graphics: 'classic',
+      scores: { campaign: [], endless: [] }, initials: '', daily: { results: {}, streak: 0 },
     });
   });
   it('round-trips', () => {
@@ -37,7 +37,7 @@ describe('save', () => {
     ['not JSON', '{oops'],
     ['a JSON null', 'null'],
     ['an array', '[]'],
-    ['a future version', JSON.stringify({ ...freshSave(), version: 3 })],
+    ['a future version', JSON.stringify({ ...freshSave(), version: 4 })],
     ['a wrong type', JSON.stringify({ ...freshSave(), unlocked: 'three' })],
     ['an out-of-range level', JSON.stringify({ ...freshSave(), unlocked: 99 })],
     ['a missing field', JSON.stringify({ version: 2, unlocked: 2 })],
@@ -83,7 +83,7 @@ const v1 = { version: 1, unlocked: 7, best: { campaign: 4200, endless: 900 }, la
 describe('version 2 upgrade', () => {
   it('upgrades a valid version 1 save in place, keeping everything', () => {
     expect(loadSave(store(JSON.stringify(v1)))).toEqual({
-      ...v1, version: 2, crt: true, graphics: 'classic', scores: { campaign: [], endless: [] }, initials: '',
+      ...v1, version: 3, crt: true, graphics: 'classic', scores: { campaign: [], endless: [] }, initials: '', daily: { results: {}, streak: 0 },
     });
   });
   it('still rejects a broken version 1 save', () => {
@@ -144,7 +144,7 @@ describe('screen effect setting', () => {
   const v2 = { ...v1, version: 2, scores: { campaign: [], endless: [] }, initials: '' };
   it('a version 2 save without the field loads with it on and keeps everything else', () => {
     const loaded = loadSave(store(JSON.stringify({ ...v2, unlocked: 5, lastSeed: 'xyz' })));
-    expect(loaded).toEqual({ ...v2, unlocked: 5, lastSeed: 'xyz', crt: true, graphics: 'classic' });
+    expect(loaded).toEqual({ ...v2, unlocked: 5, lastSeed: 'xyz', crt: true, graphics: 'classic', version: 3, daily: { results: {}, streak: 0 } });
   });
   it('replaces a non-boolean value with on', () => {
     for (const crt of ['no', 0, null, [], {}]) {
@@ -162,8 +162,7 @@ describe('graphics setting', () => {
   const v2 = { ...v1, version: 2, crt: false, scores: { campaign: [], endless: [] }, initials: '' };
   it('a save without the field loads classic and keeps everything else', () => {
     const loaded = loadSave(store(JSON.stringify({ ...v2, unlocked: 5 })));
-    expect(loaded).toEqual({ ...v2, unlocked: 5, graphics: 'classic' });
-    expect(loaded.version).toBe(2);
+    expect(loaded).toEqual({ ...v2, unlocked: 5, graphics: 'classic', version: 3, daily: { results: {}, streak: 0 } });
   });
   it('replaces an unknown value with classic', () => {
     for (const graphics of ['ultra', 'Modern', 1, null, [], {}]) {
@@ -174,5 +173,43 @@ describe('graphics setting', () => {
     const s = store();
     writeSave(s, { ...freshSave(), graphics: 'modern' });
     expect(loadSave(s).graphics).toBe('modern');
+  });
+
+  describe('daily', () => {
+    const results = { '2026-11-06': { cleared: true, timeMs: 80000, deaths: 1 }, '2026-11-07': { cleared: false, timeMs: 9000, deaths: 5 } };
+    it('round-trips daily results, streak and last key', () => {
+      const s = store();
+      const save = { ...freshSave(), daily: { results, streak: 0, lastKey: '2026-11-07' } };
+      writeSave(s, save);
+      expect(loadSave(s).daily).toEqual(save.daily);
+    });
+    it('migrates version 1 and 2 saves with an empty daily record', () => {
+      const { daily: _d, ...v2 } = { ...freshSave(), version: 2, unlocked: 5 };
+      const loaded = loadSave(store(JSON.stringify(v2)));
+      expect(loaded.version).toBe(3);
+      expect(loaded.unlocked).toBe(5);
+      expect(loaded.daily).toEqual({ results: {}, streak: 0 });
+      const { daily: _e, scores: _s, initials: _i, ...v1 } = { ...freshSave(), version: 1, unlocked: 2 };
+      expect(loadSave(store(JSON.stringify(v1))).daily).toEqual({ results: {}, streak: 0 });
+    });
+    it('replaces a damaged daily block and drops bad entries', () => {
+      const bad = { ...freshSave(), daily: 'x' };
+      expect(loadSave(store(JSON.stringify(bad))).daily).toEqual({ results: {}, streak: 0 });
+      const mixed = { ...freshSave(), daily: { results: { ...results, nope: { cleared: 'yes' }, '2026-11-08': { cleared: true, timeMs: -1, deaths: 0 } }, streak: -3, lastKey: 7 } };
+      expect(loadSave(store(JSON.stringify(mixed))).daily).toEqual({ results, streak: 0 });
+    });
+    it('keeps only the newest 60 keys when loading', () => {
+      const many: Record<string, unknown> = {};
+      for (let i = 1; i <= 90; i++) many[`2026-${i <= 31 ? '01' : i <= 59 ? '02' : '03'}-${String(i <= 31 ? i : i <= 59 ? i - 31 : i - 59).padStart(2, '0')}`] = { cleared: true, timeMs: 1, deaths: 0 };
+      const loaded = loadSave(store(JSON.stringify({ ...freshSave(), daily: { results: many, streak: 5 } })));
+      expect(Object.keys(loaded.daily.results)).toHaveLength(60);
+      expect(loaded.daily.streak).toBe(5);
+    });
+    it('does not touch progress or the high scores', () => {
+      const s = newSession('daily', 3, 'daily-2026-11-07');
+      s.score = 900;
+      const save = freshSave();
+      expect(withProgress(save, s)).toEqual(save);
+    });
   });
 });

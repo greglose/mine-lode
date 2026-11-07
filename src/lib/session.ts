@@ -1,6 +1,8 @@
 // One play-through: mode, level number, lives and banked score.
 export type Mode = 'campaign' | 'endless';
-export interface Session { mode: Mode; level: number; lives: number; score: number; seed: string }
+/** The two modes with a score board. `daily` has none: its results stay in the save. */
+export type PlayMode = Mode | 'daily';
+export interface Session { mode: PlayMode; level: number; lives: number; score: number; seed: string }
 
 export const START_LIVES = 5;
 export const CAMPAIGN_LEVELS = 20;
@@ -9,7 +11,7 @@ export const SEED_MAX = 32;
 /** Trim and cut by whole characters, so a character outside the basic plane is never split. */
 export const cleanSeed = (text: string): string => [...text.trim()].slice(0, SEED_MAX).join('');
 
-export const newSession = (mode: Mode, level: number, seed: string): Session => ({
+export const newSession = (mode: PlayMode, level: number, seed: string): Session => ({
   mode, level, lives: START_LIVES, score: 0, seed,
 });
 

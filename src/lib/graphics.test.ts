@@ -33,6 +33,10 @@ describe('graphics', () => {
 });
 
 describe('levelSeed', () => {
+  it('names a daily level by its seed and number', () => {
+    expect(levelSeed('daily', 3, 'daily-2026-11-07')).toBe('daily-2026-11-07-3');
+    expect(levelSeed('daily', 3, 'daily-2026-11-08')).not.toBe(levelSeed('daily', 3, 'daily-2026-11-07'));
+  });
   it('names a campaign level by its number, ignoring the endless seed', () => {
     expect(levelSeed('campaign', 7, '')).toBe('campaign-7');
     expect(levelSeed('campaign', 1, 'abc')).toBe('campaign-1');

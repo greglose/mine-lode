@@ -20,5 +20,5 @@ export const SLOW_FOR_MS = 3000;
 export const FALLBACK_NOTICE = 'Modern graphics are not available here; using Classic.';
 
 /** The seed Modern decor uses for a level: stable per level, so the same level always looks the same. */
-export const levelSeed = (mode: 'campaign' | 'endless', levelNumber: number, endlessSeed: string): string =>
-  mode === 'campaign' ? `campaign-${levelNumber}` : `endless-${endlessSeed}-${levelNumber}`;
+export const levelSeed = (mode: 'campaign' | 'endless' | 'daily', levelNumber: number, seed: string): string =>
+  mode === 'campaign' ? `campaign-${levelNumber}` : mode === 'daily' ? `${seed}-${levelNumber}` : `endless-${seed}-${levelNumber}`;
